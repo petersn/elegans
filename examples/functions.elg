@@ -1,10 +1,10 @@
 
-  # Brackets define functions:
+  # Brackets define functions
 foo = {
     out: "Function was called!\n";
 };
 
-  # Functions contain an express, and implicitly return its resolution
+  # Functions contain an expression, and implicitly return its resolution
 bar = {
     foo
 };
