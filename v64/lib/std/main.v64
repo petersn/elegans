@@ -1,0 +1,289 @@
+
+# ========== #
+# The std library defines a variety of abstractions from the sys library
+# ========== #
+
+libname; std
+
+  #Basic IO
+defines; getch, putch
+defines; print, getnum
+defines; stringprint
+
+  #File ops
+defines; open, open_w, close
+
+  #Variables
+defines; input_file, output_file
+
+  #Miscellaneous
+defines; sleep, copy
+
+include; sys
+
+# ========== #
+
+label; putch
+
+    push; r0
+
+    arg; l0, r0
+    >b; r0, text_buffer
+
+    <; output_file, r0
+    sys:write; r0, l1, text_buffer
+
+    pop; r0
+
+return;
+
+label; getch
+
+    push; r0
+
+      #Load the fd to read from, then read
+    <; input_file, r0
+    sys:read; r0, l1, text_buffer
+
+    <b; text_buffer, r0
+    ret; r0, l0
+
+    pop; r0
+
+return;
+
+label; stringprint
+
+    push; r0 # Temp
+    push; r1 # Pointer to the string
+    push; r2 # Derived length
+
+    arg; l0, r1
+    mov; l0, r2
+
+    label; stringprint_next_char
+
+      add; l1, r2
+
+      <b; r1, r0
+      add; l1, r1
+      ?!=; r0, l0, r0
+
+    if; r0, stringprint_next_char
+
+    sub; l1, r2
+
+    arg; l0, r1
+
+    <; output_file, r0
+    sys:write; r0, r2, r1
+
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+label; print
+
+    push; r0 # Value
+    push; r1 # Temp
+    push; r2 # Pointer to the place to print
+    push; r3 # Length
+
+    mov; l0, r3
+
+      #Calculate and load a pointer to the last byte of text_buffer
+    mov; text_buffer, r2
+    add; wordbytes, r2
+    add; wordbytes, r2
+    sub; l1, r2
+
+    arg; l0, r0
+
+      #Test if the number is negative
+      #If it is, then negate it, and output a minus sign
+    ?>=; r0, l0, r1
+    if; r1, nonneg
+        std:putch; l45       # 45 = '-'
+        neg; r0
+    label; nonneg
+
+    label; oop_back
+
+        div; r0, l10, r0
+        mov; rx, r1
+        add; l48, r1
+
+        sub; l1, r2
+        >b; r1, r2
+        add; l1, r3
+
+        ?!=; r0, l0, r1
+
+    if; r1, oop_back
+
+      #Load the fd to write to, then write
+    <; output_file, r0
+    sys:write; r0, r3, r2
+
+    pop; r3
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+label; getnum
+
+    push; r0  #Accumulated value
+    push; r1  #New character
+    push; r2  #Flags for branching
+    push; r3  #Is negative? flag
+
+    mov; l0, r0
+    mov; l0, r3
+
+    label; getnum_next_char
+
+        std:getch;
+        arg; l0, r1
+
+        ?!=; r1, l45, r2
+        if; r2, getnum_normal
+
+            xor; l1, r3
+            jump; getnum_next_char
+
+        label; getnum_normal
+
+        ?=; r1, l10, r2
+        if; r2, getnum_return
+
+        sub; l48, r1
+        mul; r0, l10, r0
+        add; r1, r0
+
+    jump; getnum_next_char
+
+    label; getnum_return
+
+    ?=; r3, l0, r2
+    if; r2, getnum_positive
+
+        neg; r0
+
+    label; getnum_positive
+
+    ret; r0, l0
+
+    pop; r3
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+label; open
+
+    push; r0
+
+    arg; l0, r0
+
+      #0 = O_RDONLY
+      #decimal 420 = octal 0644
+    sys:open; r0, l0, l420
+
+    pop; r0
+
+return;
+
+label; open_w
+
+    push; r0
+
+    arg; l0, r0
+
+      #66 = O_RDWR | O_CREAT
+      #decimal 420 = octal 0644
+    sys:open; r0, l66, l420
+
+    pop; r0
+
+return;
+
+label; close
+
+    push; r0
+
+    arg; l0, r0
+
+    sys:close; r0
+
+    pop; r0
+
+return;
+
+label; sleep
+
+    push; r0
+    push; r1
+
+    arg; l0, r0
+
+    mov; text_buffer, r1
+
+    >; r0, r1
+    add; wordbytes, r1
+    >; l0, r1
+    add; wordbytes, r1
+    >; l0, r1
+
+    sys:nanosleep; text_buffer
+
+    pop; r1
+    pop; r0
+
+return;
+
+  #Takes the arguments: pointer A, pointer B, length
+label; copy
+
+    push; r0  #Temp
+    push; r1  #ptr A
+    push; r2  #ptr B
+    push; r3  #copy count
+
+    arg; l0, r1
+    arg; l1, r2
+    arg; l2, r3
+
+    ?<=; r3, l0, r0
+    if; r0, copy_return
+
+    label; copy_next_byte
+
+        <b; r1, r0
+        >b; r0, r2
+
+        ?>; r3, l1, r0
+
+        add; l1, r1
+        add; l1, r2
+        sub; l1, r3
+
+        if; r0, copy_next_byte
+
+    label; copy_return
+
+    pop; r3
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+buffer; input_file:l0
+buffer; output_file:l1
+buffer; text_buffer:3
+

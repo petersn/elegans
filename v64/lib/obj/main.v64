@@ -1,0 +1,39 @@
+
+# ========== #
+# Object library; defines a large set of commonly used objects, and some common interfaces for using them
+# ========== #
+
+libname; obj
+
+defines; method
+
+include; mm
+
+# ========== #
+
+label; init
+
+    push; r0
+
+    mm:alloc; l16
+
+    pop; r0
+
+return;
+
+label; method
+
+    push; r0
+
+    arg; l0, r0
+
+    add; l1, r0
+
+    ret; r0, l0
+
+    pop; r0
+
+return;
+
+buffer; method_table:1
+

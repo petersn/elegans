@@ -1,0 +1,9 @@
+
+  # === Main code interface ===
+  #Defines a lot of the basic functionality of the language
+
+defs:if    -- if
+defs:while -- while
+defs:else  -- else
+mm:memalloc -$- memalloc
+

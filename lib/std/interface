@@ -1,0 +1,14 @@
+
+std:print -- print
+std:getnum -- getnum
+std:stringprint -- out
+std:getch -- inch
+std:putch -- outch
+std:input_file -$- input_file
+std:output_file -$- output_file
+std:open -- open
+std:open_w -- open_w
+std:close -- close
+std:sleep -- sleep
+std:copy -- memcopy
+

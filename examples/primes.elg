@@ -1,0 +1,57 @@
+
+{
+
+      # Sieve up to 10^7
+    cells = 10000000;
+
+      # Allocate an array
+    array = alloc: cells * wordsize;
+    i = 0;
+
+      # Fill the array with integers
+    while: {
+        array@i = i;
+        i = i+1;
+        i < cells;
+    };
+
+      # One is composite, so set it to zero
+    array@1 = 0;
+
+      # The current prime
+    elim = 2;
+
+    while: {
+          # Start eliminating multiples
+        i = elim*elim;
+
+        if: (array@elim) {
+            while: {
+                array@i = 0;
+                i = i+elim;
+                i < cells;
+            };
+        };
+
+        elim = elim+1;
+        elim*elim < cells;
+    };
+
+      # Count the number of primes identified
+    i = 0;
+    count = 0;
+
+    while: {
+        if: (array@i) {
+            count = count+1;
+        };
+        i = i+1;
+        i < cells;
+    };
+
+    out: "Primes: ";
+    print: count;
+    out: "\n";
+
+}
+

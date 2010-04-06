@@ -1,0 +1,3 @@
+
+extrn obj_string
+

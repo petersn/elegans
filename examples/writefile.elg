@@ -1,0 +1,42 @@
+
+--include array
+
+usage_message  = "usage: make-awesome path\n  Overwrites path, and turns it into an awesome file.\n";
+
+{
+
+      # Test
+    if: (cargs < 2) {
+
+        out: usage_message;
+
+    }; else: {
+
+          # Open the path we were given
+        outputfd = open_w: args@1;
+
+          # Test if it worked
+        if: (outputfd < 0) {
+            out: "Couldn't open `"; out: args@1; out: "'\n";
+        }; else: {
+
+            output_file = outputfd;
+
+            ii = 0;
+            while: {
+
+                  # Once you set the global variable output_file,
+                  # the standard IO functions now refer to that file.
+                out: "Purple\n";
+                  # There is a similar variable input_file
+
+                (ii = ii+1) < 10
+            };
+
+            close: outputfd;
+        };
+
+    };
+
+}
+

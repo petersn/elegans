@@ -1,0 +1,367 @@
+
+# ========== #
+# The mm library defines memory handling functions, most importantly alloc and free
+# ========== #
+
+libname; mm
+defines; init, resize, alloc, free, realloc, dump_structure, getsize
+defines; memalloc
+
+include; sys, std
+
+# ========== #
+
+  #Initializes the memory handling module
+  #  (Takes and returns no arguments)
+  #Begins by allocating a heap of 1 page
+  #You must call this function at least once before using any other mm function
+  #However, you may call this function multiple times, as calling it just resets the heap
+  #If you don't need anything on the heap, this function can be called to reset the heap to using very little memory
+  #This method of reseting the heap is not suggested, however! It is suggested you instead use:
+  #  mm:heap_defrag followed by mm:heap_shrink
+  # (Once they are implemented. Until then, mm:init away)
+label; init
+
+    push; r0
+    push; r1
+
+    sys:brk; l0
+    arg; l0, r0
+    >; r0, eompointer
+    >; r0, second_to_last
+
+    mov; l4096, r0
+    >; r0, memalloc
+
+    mm:resize; r0
+
+      #Build first frame
+    <; eompointer, r0
+    mov; r0, r1
+    add; wordbytes, r1
+      #Set the second to last pointer
+    >; r1, second_to_last
+    >; r1, r0
+    sub; wordbytes, r0
+    add; l4096, r0
+    >; r0, r1
+    >; r0, r0
+
+    pop; r1
+    pop; r0
+
+return;
+
+  #Takes a number of bytes to set the heap to, then resizes it
+  #Automagically restructures the heap-list to use this extra memory
+  #Warning: resize will very likely segfault if init isn't called first!
+label; resize
+
+    push; r0
+    push; r1
+
+    arg; l0, r0
+    <; eompointer, r1
+    add; r0, r1
+    sys:brk; r1
+    >; r0, memalloc
+
+      #Create a new self-referential last node
+    sub; wordbytes, r1
+    >; r1, r1
+
+      #Overwrite the second to last node to point to the new last node
+    <; second_to_last, r0
+    >; r1, r0
+
+    pop; r1
+    pop; r0
+
+return;
+
+  #Takes a number of bytes to allocate, and returns a pointer to a buffer with (at least) that many bytes
+  #If the heap is full, alloc will try to expand the heap, however possible
+  #If this fails, a NULL pointer will be returned
+  #If a negative number of bytes is given, a NULL pointer will be returned
+label; alloc
+
+    push; r0   #Temp
+    push; r1   #Begin
+    push; r2   #Middle
+    push; r3   #End
+    push; r4   #Size
+    push; r5   #New_Lower
+    push; r6   #New_Higher
+
+    arg; l0, r4
+
+      #Test if the number of bytes is negative
+      #If so, immediately return a NULL pointer
+    ?<; r4, l0, r0
+    if; r0, alloc_error
+
+      #Round up all allocates to the nearest wordsize for efficiency
+    add; wordbytes, r4
+    sub; l1, r4
+    div; r4, wordbytes, r1
+    sub; rx, r4
+
+      #Take into account the overhead of the two new nodes
+    add; wordbytes, r4
+    add; wordbytes, r4
+
+    label; alloc_loop
+
+          #Setup the three pointers.
+          # The space previous ... current is the last allocated block
+          # The space current ... next is the next unallocated block
+        <; eompointer, r1
+        <; r1, r2
+        <; r2, r3
+
+        label; alloc_next_frame
+
+              #Test if the unallocated block has enough space
+              #If so, then create a new frame, and return a pointer
+            mov; r3, r0
+            sub; r2, r0
+            sub; wordbytes, r0
+            ?<; r0, r4, r0
+            if; r0, alloc_frame_skip
+
+                  #Generate a pointer to the lower of the two new nodes
+                mov; r2, r5
+                add; wordbytes, r5
+
+                  #Generate a pointer to the higher of the two new nodes
+                mov; r2, r6
+                add; r4, r6
+                #sub; wordbytes, r6
+
+                >; r5, r2
+                >; r6, r5
+                >; r3, r6
+
+                  #Test if we modified the last frame
+                  #If so, we update the second_to_last pointer
+                <; r3, r0
+                ?!=; r3, r0, r0
+                if; r0, alloc_not_last_frame
+                    >; r6, second_to_last
+                label; alloc_not_last_frame
+
+                add; wordbytes, r5
+                ret; r5, l0
+                jump; alloc_return
+
+            label; alloc_frame_skip
+
+                #The unallocated block didn't have enought space, so slide the pointers to the next block
+            mov; r3, r1
+            <; r1, r2
+            <; r2, r3
+
+          #Test if we're at the last frame
+          #If so, then get more memory, and try again
+        ?!=; r2, r3, r0
+        if; r0, alloc_next_frame
+
+          #increase_heap is allowed to return 0 to indicate a failure
+          #In this case, begin to cry (also known as "return a NULL pointer")
+        mm:increase_heap;
+        arg; l0, r0
+        ?!=; r0, l0, r0
+
+    if; r0, alloc_loop
+
+    label; alloc_error
+
+    ret; l0, l0
+
+    label; alloc_return
+
+    pop; r6
+    pop; r5
+    pop; r4
+    pop; r3
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+  #Takes a pointer to the beginning allocated block of memory, and frees it up
+  #Returns 0 if the free failed, and 1 if the free suceeded
+  #Double-free will simply result in a 0 return, and no damage to the heap
+label; free
+
+    push; r0
+    push; r1
+    push; r2
+    push; r3
+
+    arg; l0, r0
+    sub; wordbytes, r0
+    <; eompointer, r1
+
+    <; r1, r2
+    <; r2, r1
+
+    label; free_loop
+
+        ?=; r0, r1, r3
+        if; r3, free_loop_break
+
+        <; r1, r2
+        <; r2, r1
+
+        ?=; r1, r2, r3
+        if; r3, free_error
+
+    jump; free_loop
+
+    label; free_loop_break
+
+    <; r1, r1
+    <; r1, r1
+    >; r1, r2
+
+      #Test if r1 links to itself. If so, it was the last frame, and we need to change second to last to be r2
+
+    <; r1, r0
+    ?!=; r1, r0, r3
+    if; r3, free_not_last_frame
+
+        >; r2, second_to_last
+
+    label; free_not_last_frame
+
+    ret; l1, l0
+
+    label; free_return
+
+    pop; r3
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+    label; free_error
+
+    ret; l0, l0
+
+jump; free_return
+
+  #Prototype: pointer realloc; pointer to block, new size 
+  #Takes a pointer to an allocated block, and a new requested size, and copies the data to a new block with the new size
+  #Behavior: When the requested size is smaller than the current block, a new block will be returned with the data truncated
+  #When the requested size is larger than the current block, a new block will be returned with free space after it
+  #This free space has undefined value
+  #Note: The original pointer is NOT freed, so you must free it yourself
+  #This is different from libc realloc!
+  #libc realloc isn't for data duplication, this is
+label; realloc
+
+    push; r0
+    push; r1
+    push; r2
+
+    arg; l0, r0
+    arg; l1, r1
+
+    mm:alloc; r1
+    arg; l0, r2
+
+    std:copy; r0, r2, r1
+
+    ret; r2, l0
+
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+  #Debugging routine that prints all pointers in the heap-list as offsets from the start (eompointer)
+label; dump_structure
+
+    push; r0
+    push; r1
+    push; r2
+    push; r3
+
+    <; eompointer, r3
+    mov; r3, r1
+
+    label; dump_structure_loop
+
+        mov; r1, r0
+        sub; r3, r0
+        std:print; r0
+        std:putch; l10
+
+        <; r1, r2
+        ?!=; r1, r2, r0
+        mov; r2, r1
+
+    if; r0, dump_structure_loop
+
+    std:putch; l10
+
+    pop; r3
+    pop; r2
+    pop; r1
+    pop; r0
+
+return;
+
+  #Call this function with no arguments to free up/allocate more heap memory
+  #Returns the number of bytes added
+  #If zero is returned, memory couldn't be freed up/allocated
+label; increase_heap
+
+    push; r0
+
+      #Heap growing strategy: Double memory
+    <; memalloc, r0
+    add; r0, r0
+
+    mm:resize; r0
+
+    ret; r0, l0
+
+    pop; r0
+
+return;
+
+  #Takes a pointer to an allocated block, and returns the number of bytes allocated
+  #WARNING: getsize( alloc( x ) ) may be greater than x!
+label; getsize
+
+  push; r0
+  push; r1
+
+  arg; l0, r0
+
+  sub; wordbytes, r0
+
+  <; r0, r1
+
+  sub; r0, r1
+
+  ret; r1, l0
+
+  pop; r1
+  pop; r0
+
+return;
+
+  #Pointer to the first node of the first frame of the heap
+buffer; eompointer:1
+  #Pointer to the second to last node of the last frame of the heap
+  #Whenever we grow the heap, this node must be fixed up, and therefore is kept
+buffer; second_to_last:1
+  #The number of bytes allocated to the heap (minus overhead)
+buffer; memalloc:1
+

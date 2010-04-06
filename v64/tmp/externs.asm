@@ -1,0 +1,10 @@
+public mm_init
+public mm_resize
+public mm_alloc
+public mm_free
+public mm_realloc
+public mm_dump_structure
+public mm_getsize
+public mm_memalloc
+include '/home/peter/Projects/github/elegans/v64/lib/sys/declares.asm'
+include '/home/peter/Projects/github/elegans/v64/lib/std/declares.asm'

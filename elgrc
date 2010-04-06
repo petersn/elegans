@@ -1,0 +1,24 @@
+
+  #Standard code to be included with all compiled files
+
+--link core
+
+--link sys
+--link std
+--link mm
+
+  # Initialize the memory manager
+init:;
+
+--link args_linux
+
+  # Get command line arguments
+cmdargs_init:;
+
+  # Define functions you want with every compilation
+  # For example, a simple newline command:
+#nl = { out: "\n" };
+
+  # Uncomment the next line to include a user profile with every compiled program
+--include ~/.elgprofile
+

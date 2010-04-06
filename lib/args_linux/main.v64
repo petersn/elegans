@@ -1,0 +1,57 @@
+
+libname; args_linux
+defines; init, args, cargs
+
+include; mm, std
+
+label; init
+
+    # Pop the return address
+  pop; r0
+  pop; r2
+
+    # Pop the argument count
+  pop; r1
+
+  mov; r1, r4
+
+  #std:print; r4
+  #std:putch; l10
+
+  mul; r1, wordbytes, r6
+  add; wordbytes, r6
+
+  mm:alloc; r6
+  arg; l0, r7
+  mov; r7, r3
+
+  >; r4, r3
+  >; r4, cargs
+
+  #jump; no_args_for_you
+
+  label; arg_loop
+
+    add; wordbytes, r3
+    sub; l1, r1
+
+    pop; r6
+    >; r6, r3
+
+    ?>; r1, l0, r5
+
+    if; r5, arg_loop
+
+  label; no_args_for_you
+
+  add; wordbytes, r7
+  >; r7, args
+
+  push; r2
+  push; r0
+
+return;
+
+buffer; args:1
+buffer; cargs:1
+

@@ -1,0 +1,71 @@
+
+libname; defs
+
+defines; if
+defines; while
+defines; else
+
+label; if
+
+  arg; l0, r0
+
+  ?=; r0, l0, r0
+
+  if; r0, if_skip
+
+    arg; l1, r1
+    call; r1, r0
+
+    >; l0, else_flag
+
+  label; if_return
+
+  ret; l0, l0
+
+return;
+
+  label; if_skip
+
+   >; l1, else_flag
+
+jump; if_return
+
+label; while
+
+  arg; l0, r0
+
+  push; r0
+
+  label; while_again
+
+  pop; r0
+  push; r0
+
+  call; r0
+
+  arg; l0, r1
+  if; r1, while_again
+
+  pop; r0
+
+return;
+
+label; else
+
+  <; else_flag, r0
+
+  ?=; r0, l0, r0
+
+  if; r0, if_skip
+
+    arg; l0, r0
+    call; r0
+
+  label; else_skip
+
+  ret; l0, l0
+
+return;
+
+buffer; else_flag:1
+

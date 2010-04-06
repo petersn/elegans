@@ -1,0 +1,23 @@
+
+  # Fibonacci computation program
+
+{
+
+    a = 1;
+    b = 1;
+
+    while: {
+
+        print: a;
+        c = a+b;
+        a = b;
+        b = c;
+
+        out: "\n";
+
+        sleep: 1;
+
+    };
+
+}
+

@@ -1,0 +1,181 @@
+
+Algorithm used in the memory manager:
+
+Memory is always kept as a singly linked list.
+
+
+Initial setup:
+
+    o indicates a link to the next o. x indicates a self-reference.
+    The variable 'last' always points towards the last o (as indicated with a ^)
+
+oo  ...  x
+ ^
+
+The spaces between nodes always alternate: allocated, free, allocated, free ...
+
+This means, to start, there is one allocated block of zero bytes, and one free block of lots of bytes.
+A "frame" is defined as an allocated block, followed by a free block. (i.e., at init time, there is one frame.)
+A frame is therefore three pointers:
+  Begin, Middle, and End, such that the space Begin...Middle is the allocated block, and Middle...End is the free block.
+To scan frames, you simply follow the chain of pointers two pointers forward.
+
+This gives us a simple memory allocation algorithm:
+
+  Load the first frame.
+  Scan forwards frames until you find one with a large enough free block.
+  The frame you will have found will be of the form: (Because all frames are of this form)
+
+          c                     x
+    o < TAKEN > o             free!               o
+
+   (Numbers above blocks are variables indicating lengths.)
+
+  Next, construct a new frame inside the free block as such:
+
+    o < TAKEN > o o allocated bytes o    free!    o
+
+  Note that this preserves the allocated, free, allocated, free ... pattern.
+  This is because there is now a "free" block of length zero.
+
+  The lengths of all the blocks: (Where n is the number of bytes the user requested.)
+
+          c      0        n          x - n - overhead
+    o < TAKEN > o o allocated bytes o    free!    o
+
+  There's one caveat to this algorithm. As you scan forward in frames, you have to be careful.
+  When the Begin, Middle, and End pointers are all the same, you've hit the last node.
+  In this case, no free block has sufficient space, and it's time to get more memory. (See below for algorithm)
+
+The free algorithm is even simpler:
+
+  Assume you're given a pointer to the beginning of an allocated block, ptr.
+  Subtract the word size from ptr to get the Middle node of the frame that describes that block.
+
+  Scan through the singly linked list to find the node directly before that node.
+  Note that this serves the double purpose of preventing double-frees.
+  If the node isn't in the list, then a double-free or other error occured.
+
+  When you find the previous node (the Begin node of that frame, naturally), simply overwrite it with the address of the third node after it.
+  In other words, call the node we scanned to find nodeptr, then perform:
+
+    nodeptr = ***nodeptr;
+
+  Why does this simple (although ugly) assignment work?
+  Take the previous example two frames we just created
+
+    o < TAKEN > o o allocated bytes o    free!    o
+                   ^
+
+  The caret indicates the pointer the user gave us.
+  First, we subtract the word size:
+  
+    o < TAKEN > o o allocated bytes o    free!    o
+                  ^
+
+  Next we scan to find the pointer before this one.
+  
+    o < TAKEN > o o allocated bytes o    free!    o
+    ------------^
+
+  Finally, we overwrite this pointer to point towards the pointer three after it.
+
+    o < TAKEN > o o allocated bytes o    free!    o
+                \_________________________________^
+
+  This effectively erases the ndoes in between from the singly linked list:
+
+    o < TAKEN > o             free!               o
+
+Finally, expanding the heap.
+
+If you wish to be able to expand the heap, you have to store a pointer to the second to last node in the list.
+
+You can now expand the last frame as such:
+
+    o < TAKEN > o  free!  x
+                ^
+
+  (The caret indicates the pointer to the second to last node.)
+
+  Create a new node that points to itself somewhere later in memory.
+
+    o < TAKEN > o  free!  x                       x
+                ^
+
+  Next, overwrite the second to last node to point to this new node.
+
+    o < TAKEN > o             free!               o
+
+  Expanding memory is clearly pretty easy.
+
+Actual C implementations:
+
+(Free and memory expansion are left as exercises to the reader.)
+
+To allocate memory:
+
+  //Allocating into a freeblock requires placing two extra nodes in it
+  //Therefore, we need a need to calculate an overhead constant:
+#define overhead (sizeof(void *)*2)
+
+  //These two are initialized by the memory allocator init function
+void *first_node;
+void *second_to_last;
+
+void *alloc(int size) {
+    void *previous, *current, *next;
+    void *new_lower, *new_higher;
+
+    while (1) {
+
+          //Setup the three pointers.
+          // The space previous ... current is the last allocated block
+          // The space current ... next is the next unallocated block
+        previous = first_node;
+        current = *previous;
+        next = *current;
+
+        while (current != next) {
+
+              //Test if the unallocated block has enough space
+              //If so, then create a new frame, and return a pointer
+            if ( (next-current) >= size + overhead) {
+
+                new_lower = current + sizeof(void *);
+                new_higher = current + sizeof(void *) + size;
+                
+                *current = new_lower;
+                *new_lower = new_higher;
+                *new_higher = next;
+
+                  //Finally, test if we just modified the last frame. If so, update the global second_to_last pointer.
+                if (next == *next) {
+                  second_to_last = new_higher;
+                }
+
+                  //Return the first address inside the block we allocated
+                return current + sizeof(void *) * 2;
+            }
+
+              //The unallocated block didn't have enought space, so slide the pointers to the next block
+            previous = next;
+            current = *previous;
+            next = *current;
+
+        }
+
+          //Out of memory, let's expand the heap, then try again
+          //This function can do whatever it wants: defragment memory, garbage collect, or just allocate more memory
+        if ( increase_memory() ) {
+              //Increasing memory failed, so we give up. Return NULL
+            return NULL;
+        }
+
+          //We allocated more memory, so the nodes may have moved. Repropagate!
+    }
+
+      //Error: No availiable spaces
+    return NULL;
+}
+

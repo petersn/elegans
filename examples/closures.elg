@@ -1,0 +1,26 @@
+
+  # Adder making high order function
+adder_maker = { [num]
+      # Returns a closure over num
+    { [x] $num+x }
+};
+
+{
+
+      # Make an adder
+    f = adder_maker: 7;
+
+    out: "Result: ";
+
+      # Unfortunately, currently ! is used for calling closures
+      # I want closures to look the same as normal functions, called with :
+    print: f! 9;
+
+    out: "\n";
+
+      # Further unfortunately, I need to free this closure...
+      # They are currently quite limited. At least I support them!
+    free: f;
+
+}
+

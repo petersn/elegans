@@ -1,0 +1,8 @@
+
+mm:init -- init
+mm:alloc -- alloc
+mm:free -- free
+mm:realloc -- realloc
+mm:dump_structure -- dump_structure
+mm:getsize -- getsize
+

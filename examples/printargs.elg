@@ -1,0 +1,16 @@
+
+  # Include the array library, for reading arguments
+--include array
+
+{
+
+      # Iterate through the arguments
+    for: ~i args {
+
+          # Print them out
+        out: i; nl:;
+
+    };
+
+}
+

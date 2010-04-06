@@ -1,0 +1,64 @@
+
+  #Array extensions for Elegans
+
+overhead = 1;
+
+  # mkarray: words -> ptr
+mkarray = { [size_to_allocate]
+
+    ptr = alloc: (size_to_allocate + overhead) * wordsize;
+    ptr` = size_to_allocate;
+
+    ptr + wordsize
+
+};
+
+  # freearray: array -> success?
+freearray = { [array_ptr]
+
+    free: array_ptr - wordsize;
+
+};
+
+  # copyarray: array -> copy
+copyarray = { [array_ptr]
+
+    (realloc: (array_ptr-wordsize) wordsize*(`(array_ptr-wordsize)+1) ) + wordsize;
+
+};
+
+  # resizearray: array words -> copy lengthened or truncated to words
+resizearray = { [array_ptr size_to_allocate]
+
+    copied_array = (realloc: (array_ptr-wordsize) wordsize*(size_to_allocate+1) );
+    (`copied_array) = size_to_allocate;
+
+    copied_array + wordsize;
+
+};
+
+  # lenarray: array -> count of elements
+lenarray = { [array_ptr]
+
+    (`(array_ptr - wordsize))
+
+};
+
+  # for: ~var array {code}
+for = { [var_ptr array_ptr code_ptr]
+
+    iteration_counter = 0;
+    maximum = `(array_ptr - wordsize);
+
+    while: {
+
+        `var_ptr = `array_ptr;
+        code_ptr: iteration_counter;
+        array_ptr = array_ptr + wordsize;
+
+        (iteration_counter = iteration_counter + 1) < maximum
+
+    };
+
+};
+

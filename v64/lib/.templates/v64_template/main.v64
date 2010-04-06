@@ -1,0 +1,25 @@
+
+# ========== #
+# Example library definition
+# ========== #
+
+libname; example
+
+defines; increment
+
+# ========== #
+
+label; increment
+
+    push; r0
+
+    arg; l0, r0
+
+    add; l1, r0
+
+    ret; r0, l0
+
+    pop; r0
+
+return;
+

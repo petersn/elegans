@@ -1,0 +1,32 @@
+
+  # Brackets define functions:
+foo = {
+    out: "Function was called!\n";
+};
+
+  # Functions contain an express, and implicitly return its resolution
+bar = {
+    foo
+};
+
+  # Function arguments are specified in brackets
+bob = { [x y]
+      # Return a function that gives the actual result
+    { x+y }
+};
+
+  # Main function.
+  # The `main =' bit is completely optional.
+main = {
+
+      # Call foo.
+    foo:;
+
+      # Call bar, then call the thing it returned.
+    bar::;
+
+      # Call bob on 5 and 6, call the thing it returned, then print that.
+    out: "5 + 6 = "; print: (bob: 5 6):; out: "\n";
+
+}
+

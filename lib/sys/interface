@@ -1,0 +1,9 @@
+
+sys:exit -- exit
+sys:write -- write
+sys:read -- read
+sys:open -- open
+sys:close -- close
+sys:sleep -- sleep
+sys:brk -- brk
+
