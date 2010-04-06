@@ -29,7 +29,7 @@ it's home directory any more.
 ### Using Elegans ###
 (This assumes you ran: `ln -s /usr/bin/elg $PWD/compiler.py` during setup. Optional.)  
 
-Elegans usage: elg [-ldc] [-(i|ii) path:path...] [-o output] path  
+Elegans usage: `elg [-ldc] [-(i|ii) path:path...] [-o output] path`  
 Options:
 
     -l       -- Don't produce an entry point. (library mode)
