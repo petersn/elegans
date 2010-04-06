@@ -18,9 +18,9 @@ can download FASM for your system here: [http://flatassembler.net/download.php](
 
 The current distributed version of v64 is in this archive.
 
-To set up dependencies, run setup.sh. Once you have run this script,
-you should be all set to run compiler.py, and start compiling code.
-If you wish, you may symlink compiler.py to, for example,
+To set up dependencies, run `sudo make install`. Once you have run this
+script, you should be all set to run compiler.py, and start compiling
+code. If you wish, you may symlink compiler.py to, for example,
 /usr/bin/elg. The compiler will automatically find its "home"
 directory by following argv[0] as a trail of symlinks. Therefore, you
 may not hardlink elegans to /usr/bin/elg, or it won't be able to find
