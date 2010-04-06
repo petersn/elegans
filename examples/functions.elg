@@ -25,7 +25,7 @@ main = {
       # Call bar, then call the thing it returned.
     bar::;
 
-      # Call bob on 5 and 6, call the thing it returned, then print that.
+      # Call bob on 5 and 6, then call the thing it returned, then print the thing *that* returned.
     out: "5 + 6 = "; print: (bob: 5 6):; out: "\n";
 
 }
